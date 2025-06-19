@@ -1,7 +1,6 @@
 package com.godlike.cardpair.screens
 
 import android.graphics.Paint
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -39,18 +38,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.godlike.cardpair.helper.readFromPreferences
+import com.godlike.cardpair.helper.saveToPreferences
 import com.godlike.cardpair.model.Card
 import com.godlike.cardpair.model.Game
 import com.godlike.cardpair.model.generateCards
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-const val TAG = "DEBUG"
 var gameInfo = Game()
-
 
 @Composable
 fun GameView(
@@ -58,6 +58,8 @@ fun GameView(
     onGameOverMainMenu: () -> Unit,
     onRestart: () -> Unit,
 ) {
+    val context = LocalContext.current
+    var highScore by remember { mutableIntStateOf(0) }
     var timeLeft by remember(key) { mutableIntStateOf(60) }
     var showDialog by remember(key) { mutableStateOf(false) }
     val cards = remember(key) { mutableStateListOf<Card>() }
@@ -66,17 +68,15 @@ fun GameView(
         gameInfo = Game() // reset game
         cards.clear()
         cards.addAll(generateCards())
-
+        highScore = readFromPreferences(context, "highscore", 0)
         while (timeLeft > 0 && !gameInfo.isGameOver) {
             delay(1000L)
             timeLeft--
-            Log.d(TAG, "GameView: " + gameInfo.isGameOver + " : " + timeLeft.toString())
         }
         if (timeLeft == 0) {
             gameInfo.isGameOver = true
             showDialog = true
         }
-        Log.d(TAG, "GameView: " + gameInfo.isGameOver)
     }
 
     if (showDialog) {
@@ -137,6 +137,8 @@ fun GameView(
                             onGameEnd = {
                                 gameInfo.isGameOver = true
                                 showDialog = true
+                                if (gameInfo.score < highScore || highScore == 0)
+                                    saveToPreferences(context, "highscore", gameInfo.score)
                             }
                         )
                     }
@@ -187,6 +189,7 @@ private fun CardsView(index: Int, cards: SnapshotStateList<Card>, onGameEnd: () 
                 if (!cards[index].isClicked && !cards[index].isPaired && !cards[index].isFailed && !gameInfo.isGamePaused && !gameInfo.isGameOver) {
                     //On Second Click
                     if (gameInfo.selectedCardIndex > -1) {
+                        gameInfo.score++
                         // If it is pair
                         if (cards[gameInfo.selectedCardIndex].image == cards[index].image) {
                             cards[index] = cards[index].copy(isClicked = false, isPaired = true)
@@ -198,7 +201,9 @@ private fun CardsView(index: Int, cards: SnapshotStateList<Card>, onGameEnd: () 
                             gameInfo.selectedCardIndex = -1
                             //Execute here
                             var bool = false
-                            for (card in cards) { if (!card.isPaired) bool = true }
+                            for (card in cards) {
+                                if (!card.isPaired) bool = true
+                            }
                             if (!bool) onGameEnd()
                         } else {
                             //If it is not pair
@@ -224,7 +229,6 @@ private fun CardsView(index: Int, cards: SnapshotStateList<Card>, onGameEnd: () 
                                 gameInfo.selectedCardIndex = -1
                             }
                         }
-                        gameInfo.score++
                     } else {
                         // On First Click
                         cards[index] = cards[index].copy(isClicked = true)

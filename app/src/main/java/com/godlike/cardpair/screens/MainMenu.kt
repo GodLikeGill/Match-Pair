@@ -11,16 +11,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.godlike.cardpair.helper.readFromPreferences
 
 @Composable
 fun MainMenu(onPlayClicked: () -> Unit) {
+
+    val context = LocalContext.current
+    var highScore by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        highScore = readFromPreferences(context, "highscore", 0)
+    }
+
     Box(
         Modifier
             .fillMaxSize()
@@ -28,7 +42,7 @@ fun MainMenu(onPlayClicked: () -> Unit) {
             .padding(vertical = 16.dp, horizontal = 8.dp)
     ) {
         Text(
-            text = "Score: ${gameInfo.score}",
+            text = "High Score: $highScore",
             color = Color.White,
             modifier = Modifier.align(alignment = Alignment.TopEnd)
         )
