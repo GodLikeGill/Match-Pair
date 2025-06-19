@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,7 +58,6 @@ fun GameView(
     onGameOverMainMenu: () -> Unit,
     onRestart: () -> Unit,
 ) {
-
     var timeLeft by remember(key) { mutableIntStateOf(60) }
     var showDialog by remember(key) { mutableStateOf(false) }
     val cards = remember(key) { mutableStateListOf<Card>() }
@@ -130,8 +130,16 @@ fun GameView(
                 columns = GridCells.Fixed(4),
             ) {
                 items(cards.size) { index ->
-                    Box (Modifier.padding(10.dp)){ CardsView(index = index, cards = cards) }
-
+                    Box(Modifier.padding(10.dp)) {
+                        CardsView(
+                            index = index,
+                            cards = cards,
+                            onGameEnd = {
+                                gameInfo.isGameOver = true
+                                showDialog = true
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -139,7 +147,7 @@ fun GameView(
 }
 
 @Composable
-private fun CardsView(index: Int, cards: SnapshotStateList<Card>) {
+private fun CardsView(index: Int, cards: SnapshotStateList<Card>, onGameEnd: () -> Unit) {
     val scope = rememberCoroutineScope()
     val containerColor = cards[index].color
     val glowColor = cards[index].color
@@ -188,6 +196,10 @@ private fun CardsView(index: Int, cards: SnapshotStateList<Card>) {
                                     isPaired = true
                                 )
                             gameInfo.selectedCardIndex = -1
+                            //Execute here
+                            var bool = false
+                            for (card in cards) { if (!card.isPaired) bool = true }
+                            if (!bool) onGameEnd()
                         } else {
                             //If it is not pair
                             gameInfo.isGamePaused = true
@@ -229,7 +241,9 @@ private fun CardsView(index: Int, cards: SnapshotStateList<Card>) {
             Image(
                 imageVector = cards[index].image,
                 contentDescription = "",
-                modifier = Modifier.aspectRatio(0.5f))
+                modifier = Modifier.aspectRatio(0.5f),
+                colorFilter = ColorFilter.tint(Color(0xFF2b2b2b))
+            )
         }
     }
 }
@@ -291,5 +305,5 @@ private fun PreviewCardView() {
             )
         )
     }
-    CardsView(index = 0, cards = dummyCards)
+    CardsView(index = 0, cards = dummyCards, onGameEnd = {})
 }
